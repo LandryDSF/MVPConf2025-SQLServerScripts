@@ -23,7 +23,7 @@ go
 -- Leva 1 min para criar
 
 /*********************************
- Cria Tabela com 7.8GB de ocupaÁ„o
+ Cria Tabela com 7.8GB de ocupa√ß√£o
 **********************************/
 use HandsOn
 go
@@ -36,7 +36,6 @@ TipoCliente_ID char(2) NOT NULL,
 TipoCliente varchar(100) NOT NULL,
 Nome char(1000) not null,
 Sufixo char(1000) NULL,
-Email char(1000) NOT NULL,
 rowguid uniqueidentifier ROWGUIDCOL  NOT NULL,
 DataAlteracao datetime NOT NULL)
 go
@@ -45,46 +44,15 @@ set nocount on
 go
 
 -- Inclui 100 linhas
-INSERT dbo.Cliente (TipoCliente_ID,TipoCliente, Nome, Sufixo, Email, rowguid, DataAlteracao)
-SELECT top 100 'SA' as TipoCliente_ID, 
+INSERT dbo.Cliente (TipoCliente_ID,TipoCliente, Nome, Sufixo, rowguid, DataAlteracao)
+SELECT 'SA' as TipoCliente_ID, 
 'Store Account' as TipoCliente,
 FirstName + isnull(' ' + MiddleName,'') + isnull(' ' + LastName,'') as Nome, 
-Suffix as Sufixo, b.EmailAddress as Email, rowguid, ModifiedDate as DataAlteracao 
+Suffix as Sufixo, rowguid, ModifiedDate as DataAlteracao 
 FROM AdventureWorks.Person.Person a
-JOIN (SELECT BusinessEntityID, max(EmailAddress) as EmailAddress FROM AdventureWorks.Person.EmailAddress GROUP BY BusinessEntityID) b
-on a.BusinessEntityID = b.BusinessEntityID
-go
+go 50
 
--- Executa 200x o INSERT...SELECT
-INSERT dbo.Cliente (TipoCliente_ID,TipoCliente, Nome, Sufixo, Email, rowguid, DataAlteracao)
-SELECT PersonType as TipoCliente_ID, 
-CASE PersonType
-WHEN 'SC' THEN 'Store Contact'
-WHEN 'IN' THEN 'Individual (retail) customer'
-WHEN 'SP' THEN 'Sales person'
-WHEN 'EM' THEN 'Employee (non-sales)'
-WHEN 'VC' THEN 'Vendor contact' 
-WHEN 'GC' THEN 'General contact'
-END as TipoCliente,
-FirstName + isnull(' ' + MiddleName,'') + isnull(' ' + LastName,'') as Nome, 
-Suffix as Sufixo, b.EmailAddress as Email, rowguid, ModifiedDate as DataAlteracao 
-FROM AdventureWorks.Person.Person a
-JOIN (SELECT BusinessEntityID, max(EmailAddress) as EmailAddress FROM AdventureWorks.Person.EmailAddress GROUP BY BusinessEntityID) b
-on a.BusinessEntityID = b.BusinessEntityID
-go 200
-
--- Inclui 50 linhas
-INSERT dbo.Cliente (TipoCliente_ID,TipoCliente, Nome, Sufixo, Email, rowguid, DataAlteracao)
-SELECT top 50 'SA' as TipoCliente_ID, 
-'Store Account' as TipoCliente,
-FirstName + isnull(' ' + MiddleName,'') + isnull(' ' + LastName,'') as Nome, 
-Suffix as Sufixo, b.EmailAddress as Email, rowguid, ModifiedDate as DataAlteracao 
-FROM AdventureWorks.Person.Person a
-JOIN (SELECT BusinessEntityID, max(EmailAddress) as EmailAddress FROM AdventureWorks.Person.EmailAddress GROUP BY BusinessEntityID) b
-on a.BusinessEntityID = b.BusinessEntityID
-go
-
--- Leva 17 minutos para executar
+-- Leva 3 minutos para executar
 /***************************** FIM Prepara Hands On *********************************/
 
 
@@ -109,17 +77,17 @@ DROP TABLE #Tabela_TMP
 
 /*************************** 
  Monitorando a TEMPDB
- - Abrir outra sess„o
+ - Abrir outra sess√£o
 ****************************/
--- EspaÁo Utilizado na TempDB
-SELECT SUM(unallocated_extent_page_count) * 8 / 1024 AS [EspaÁo Livre em MB], -- EspaÁo n„o alocado
+-- Espa√ßo Utilizado na TempDB
+SELECT SUM(unallocated_extent_page_count) * 8 / 1024 AS [Espa√ßo Livre em MB], -- Espa√ßo n√£o alocado
 SUM(version_store_reserved_page_count) * 8 / 1024 AS [Version Store em MB], -- Versionamento de linhas
-SUM(user_object_reserved_page_count) * 8 / 1024 AS [Objetos de Usu·rio em MB], -- Tabelas tempor·rias
+SUM(user_object_reserved_page_count) * 8 / 1024 AS [Objetos de Usu√°rio em MB], -- Tabelas tempor√°rias
 SUM(internal_object_reserved_page_count) * 8 / 1024 AS [Objetos Internos em MB] -- Worktables
 FROM tempdb.sys.dm_db_file_space_usage
 
 /****************************************
- EspaÁo Utilizado por sess„o na TempDB
+ Espa√ßo Utilizado por sess√£o na TempDB
 *****************************************/
 SELECT tsu.[session_id], tsu.exec_context_id,
 es.host_name as [Host], es.login_name as [Login], es.program_name as Aplicacao,
@@ -169,14 +137,20 @@ JOIN sys.databases b on b.database_id = a.database_id
 ORDER BY Uso_KB desc
 
 /********************************************
- Consultas sem Õndices em Tabelas Grandes
+ Consultas sem √çndices em Tabelas Grandes
 *********************************************/
 set statistics io on
 set statistics io off
 
 -- Utiliza TEMPDB para Sort
+SELECT count(*) FROM dbo.Cliente
+
 SELECT TOP 150 * FROM dbo.Cliente
 ORDER BY DataAlteracao DESC
+
+
+
+
 /*
 Table 'Cliente'. Scan count 4, logical reads 2012104
 Total de IO = 2012104 pg x 8 KB = 16096832 KB = 15719 MB = 15 GB
@@ -212,7 +186,7 @@ END
 go
 
 
--- Inclus„o de Linhas em Tabela com Trigger, provoca uso do Versionamento de Linhas
+-- Inclus√£o de Linhas em Tabela com Trigger, provoca uso do Versionamento de Linhas
 INSERT dbo.Funcionario (Nome, Email, DataAlteracao)
 SELECT FirstName + isnull(' ' + MiddleName,'') + isnull(' ' + LastName,'') as Nome, 
 b.EmailAddress as Email, ModifiedDate as DataAlteracao 
